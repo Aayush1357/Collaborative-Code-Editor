@@ -6,7 +6,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,7 +26,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private ApplicationContext context;
 
-    @SneakyThrows
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
@@ -39,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
             token = authHeader.substring(7);
             email = jwtService.extractEmail(token);
         }
-
+        System.out.println("This is email " + email + " ---------   " + authHeader);
 
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null){
             UserDetails userDetails = null;

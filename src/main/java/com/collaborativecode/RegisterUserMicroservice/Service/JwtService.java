@@ -5,12 +5,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cglib.core.internal.Function;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Service
 public class JwtService {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
     private String seckretKey = "";
 
     public JwtService(){
@@ -34,9 +36,8 @@ public class JwtService {
         }
     }
     public String generateToken(String email){
-
+        System.out.println(email);
         Map<String  , Object> claims = new HashMap<>();
-
         return Jwts.builder()
                 .claims()
                 .add(claims)
@@ -54,6 +55,8 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
+
+        log.info(token);
         return extractClaim(token, Claims::getSubject);
     }
 
@@ -67,13 +70,12 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith(getKey())
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseSignedClaims(token).getPayload();
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
         final String email = extractEmail(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (email.equals("ishi@gmail.com") && !isTokenExpired(token));
     }
 
     private boolean isTokenExpired(String token) {
