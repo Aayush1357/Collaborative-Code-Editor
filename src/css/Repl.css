@@ -1,0 +1,22 @@
+
+.editor_body{
+    display: flex;
+    align-items: center;
+    justify-items: center;
+}
+
+.editor{
+    display: flex;
+    flex-direction: column;
+}
+
+.editor_folder_structure{
+    background-color: rgb(194, 215, 255);
+    border: 1px solid black;
+    width: 50px;
+}
+
+.editor_code_window{
+    width:1000px;
+
+}
