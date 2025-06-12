@@ -5,17 +5,17 @@ import java.util.*;
 
 import com.collaborativecode.RegisterUserMicroservice.Service.UsersService;
 import com.collaborativecode.RegisterUserMicroservice.model.User;
-import com.collaborativecode.RegisterUserMicroservice.model.UserDTO;
-import lombok.Getter;
+import com.collaborativecode.RegisterUserMicroservice.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
@@ -27,26 +27,19 @@ public class UserController {
         return oAuth2User.getAttributes();
     }
 
-    @PostMapping("/user-details")
-    public ResponseEntity<?> userDetail(@RequestBody User user){
-        return usersService.userDetail(user);
-    }
-
-    @GetMapping("/all-users")
-    public ResponseEntity<?> getAllUser(){
-        return ResponseEntity.ok().body("All Users");
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user){
-
-        return ResponseEntity.ok().body(usersService.verify(user));
+    @GetMapping("/me")
+    public ResponseEntity<User> authenticatedUser(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(currentUser);
     }
 
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO){
-        return usersService.register(userDTO);
+    @GetMapping("/")
+    public ResponseEntity<List<User>> allUsers(){
+        List<User> users = usersService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
+
 
 }

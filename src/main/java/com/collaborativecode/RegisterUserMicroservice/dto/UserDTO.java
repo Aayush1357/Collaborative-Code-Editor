@@ -1,4 +1,4 @@
-package com.collaborativecode.RegisterUserMicroservice.model;
+package com.collaborativecode.RegisterUserMicroservice.dto;
 
 import lombok.Data;
 
