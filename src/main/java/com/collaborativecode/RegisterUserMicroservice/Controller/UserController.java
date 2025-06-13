@@ -5,7 +5,6 @@ import java.util.*;
 
 import com.collaborativecode.RegisterUserMicroservice.Service.UsersService;
 import com.collaborativecode.RegisterUserMicroservice.model.User;
-import com.collaborativecode.RegisterUserMicroservice.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -40,6 +39,5 @@ public class UserController {
         List<User> users = usersService.getAllUsers();
         return ResponseEntity.ok(users);
     }
-
 
 }

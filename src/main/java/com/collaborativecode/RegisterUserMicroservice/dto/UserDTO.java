@@ -1,6 +1,9 @@
 package com.collaborativecode.RegisterUserMicroservice.dto;
 
+import jakarta.persistence.Column;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class UserDTO {
