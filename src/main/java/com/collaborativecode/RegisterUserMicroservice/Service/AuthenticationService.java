@@ -1,17 +1,18 @@
 package com.collaborativecode.RegisterUserMicroservice.Service;
 
 import com.collaborativecode.RegisterUserMicroservice.Repository.UserRepository;
-import com.collaborativecode.RegisterUserMicroservice.dto.LoginUserDto;
+import com.collaborativecode.RegisterUserMicroservice.codegenerator.SnowflakeIdGenerator;
+import com.collaborativecode.RegisterUserMicroservice.dto.LoginUserRequest;
 import com.collaborativecode.RegisterUserMicroservice.dto.UserDTO;
-import com.collaborativecode.RegisterUserMicroservice.dto.VerifyUserDto;
+import com.collaborativecode.RegisterUserMicroservice.dto.VerifyUserRequest;
 import com.collaborativecode.RegisterUserMicroservice.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import java.util.Random;
 
 @Service
 public class AuthenticationService {
+
 
     @Autowired
     private EmailService emailService;
@@ -35,6 +37,13 @@ public class AuthenticationService {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final SnowflakeIdGenerator snowflakeIdGenerator;
+
+    public AuthenticationService(SnowflakeIdGenerator snowflakeIdGenerator) {
+        this.snowflakeIdGenerator = snowflakeIdGenerator;
+    }
 
     public ResponseEntity<?> signup(UserDTO userDTO){
 
@@ -45,6 +54,7 @@ public class AuthenticationService {
             return ResponseEntity.badRequest().body("Username already in use");
 
         User user = new User();
+        user.setId(snowflakeIdGenerator.nextId());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         user.setEmail(userDTO.getEmail());
         user.setUsername(userDTO.getUsername());
@@ -85,24 +95,23 @@ public class AuthenticationService {
     }
 
 
-    public User authenticate(LoginUserDto input_data) {
-        authenticationManager.authenticate(
+    public User authenticate(LoginUserRequest input_data) throws Exception{
+        var auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        input_data.getEmail() ,
+                        input_data.getEmail(),
                         input_data.getPassword()
                 )
         );
 
-        User user = userRepository.findByEmail(input_data.getEmail())
-                .orElseThrow(() -> new RuntimeException("User Not Found."));
+        User user = (User) auth.getPrincipal();
 
         if (!user.isEnabled()){
-            throw new RuntimeException("Account Not Verified. Please verify your account.");
+            return null;
         }
         return user;
     }
 
-    public void verifyUser(VerifyUserDto input) {
+    public void verifyUser(VerifyUserRequest input) {
         Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
 
         if (optionalUser.isPresent()){
@@ -112,9 +121,11 @@ public class AuthenticationService {
             }
 
             if(user.getVerification_code().equals(input.getVerificationCode())){
+
                 user.setVerification_code(null);
                 user.setVerificationCodeExpiresAt(null);
                 user.setEnabled(true);
+
                 userRepository.save(user);
             }else{
                 throw new RuntimeException("Invalid verification code.");

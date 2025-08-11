@@ -1,12 +1,7 @@
 package com.collaborativecode.RegisterUserMicroservice.dto;
 
 
-import jakarta.websocket.server.ServerEndpoint;
-import lombok.Getter;
-import lombok.Setter;
-
-
-public class VerifyUserDto {
+public class VerifyUserRequest {
 
     public String getEmail() {
         return email;

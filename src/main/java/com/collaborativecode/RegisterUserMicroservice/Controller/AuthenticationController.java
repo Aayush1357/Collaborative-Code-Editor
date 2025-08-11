@@ -2,17 +2,24 @@ package com.collaborativecode.RegisterUserMicroservice.Controller;
 
 import com.collaborativecode.RegisterUserMicroservice.Service.AuthenticationService;
 import com.collaborativecode.RegisterUserMicroservice.Service.JwtService;
-import com.collaborativecode.RegisterUserMicroservice.dto.LoginUserDto;
+import com.collaborativecode.RegisterUserMicroservice.dto.LoginUserRequest;
 import com.collaborativecode.RegisterUserMicroservice.dto.UserDTO;
-import com.collaborativecode.RegisterUserMicroservice.dto.VerifyUserDto;
+import com.collaborativecode.RegisterUserMicroservice.dto.VerifyUserRequest;
 import com.collaborativecode.RegisterUserMicroservice.model.User;
 import com.collaborativecode.RegisterUserMicroservice.responses.LoginResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Duration;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,30 +32,47 @@ public class AuthenticationController {
     private AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto){
+    public ResponseEntity<?> authenticate(@RequestBody LoginUserRequest loginUserDto  , HttpServletResponse response ) throws Exception {
 
-        User authenticatedUser = authenticationService.authenticate(loginUserDto);
+        try {
+            User authenticatedUser = authenticationService.authenticate(loginUserDto);
 
-        String jwtToken = jwtService.generateToken(authenticatedUser);
+            System.out.println(authenticatedUser.getUsername() + " " + authenticatedUser.getEmail());
+            if (authenticatedUser == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User is not enabled"));
 
-        LoginResponse loginResponse = new LoginResponse(jwtToken , jwtService.getExpirationTime());
+            String jwtToken = jwtService.generateToken(authenticatedUser);
 
-        return ResponseEntity.ok(loginResponse);
+
+            LoginResponse loginResponse = new LoginResponse(jwtToken, jwtService.getExpirationTime());
+
+            Cookie cookie = new Cookie("jwtToken", jwtToken);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            cookie.setMaxAge((int)Duration.ofDays(1).getSeconds());
+            response.addCookie(cookie);
+
+            return ResponseEntity.ok("Login Successful");
+        } catch (BadCredentialsException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid email or password"));
+        }
+
     }
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO){
+    public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO) {
         return authenticationService.signup(userDTO);
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserDto verifyUserDto){
+    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserRequest verifyUserDto) {
 
         try {
             authenticationService.verifyUser(verifyUserDto);
             return ResponseEntity.ok().body("Account Verified Successfully");
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body("Account Not Verified");
         }
     }

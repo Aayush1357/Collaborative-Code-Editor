@@ -1,22 +1,22 @@
 package com.collaborativecode.RegisterUserMicroservice.Service;
 
 
+import com.collaborativecode.RegisterUserMicroservice.Repository.UserRepository;
+import com.collaborativecode.RegisterUserMicroservice.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cglib.core.internal.Function;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class JwtService {
@@ -27,19 +27,8 @@ public class JwtService {
     @Value("${security.jwt.expiration-time}")
     private long jwtExpiration;
 
-//    public JwtService(){
-//
-//        try {
-//            KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-//            keyGenerator.init(256);
-//            SecretKey sk = keyGenerator.generateKey();
-//            secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
-//
-//        } catch (NoSuchAlgorithmException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
+    @Autowired
+    private UserRepository userRepository;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -67,21 +56,25 @@ public class JwtService {
                               UserDetails userDetails,
                               long jwtExpiration) {
         Map<String  , Object> claims = new HashMap<>();
+
+        Optional<User> user = userRepository.findByUsername(userDetails.getUsername());
+
+        String email = user.get().getEmail();
         return Jwts
                 .builder()
                 .claims()
                 .add(claims)
-                .subject(userDetails.getUsername())
+                .subject(email)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis()+ jwtExpiration))
                 .and()
-                .signWith(getSignInKey() , SignatureAlgorithm.HS256)
+                .signWith(getSignInKey())
                 .compact();
     }
 
-    public boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateToken(String token , User user) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (username.equals(user.getEmail()) && !isTokenExpired(token));
     }
 
     public boolean isTokenExpired(String token) {
@@ -102,7 +95,6 @@ public class JwtService {
 
     public SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        System.out.println(new String(keyBytes));
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
